@@ -1,0 +1,52 @@
+{
+  "module": "modules/aws-s3-bucket",
+  "version": "0.1.0",
+  "variables": [
+    {
+      "name": "bucket_name",
+      "type": "string",
+      "description": "The name of the S3 data bucket. Must be globally unique across AWS.",
+      "required": true,
+      "validation": { "pattern": "^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$" },
+      "ui": { "label": "Bucket Name", "group": "identity" }
+    },
+    {
+      "name": "environment",
+      "type": "string",
+      "description": "Deployment environment.",
+      "required": true,
+      "validation": { "enum": ["dev", "tst", "qua", "ppr", "prd"] },
+      "ui": { "label": "Environment", "group": "identity" }
+    },
+    {
+      "name": "owner",
+      "type": "string",
+      "description": "Team or individual responsible for this bucket (DSV required tag: owner).",
+      "required": true,
+      "ui": { "label": "Owner", "group": "governance" }
+    },
+    {
+      "name": "cost_center",
+      "type": "string",
+      "description": "Cost center code for billing (DSV required tag: cost-center).",
+      "required": true,
+      "ui": { "label": "Cost Center", "group": "governance" }
+    },
+    {
+      "name": "region",
+      "type": "string",
+      "description": "AWS region where the bucket will be created. Must be a DSV-approved region.",
+      "required": false,
+      "default": "eu-west-1",
+      "validation": { "enum": ["eu-west-1", "eu-central-1", "us-east-1", "us-west-2"] },
+      "ui": { "label": "Region", "group": "placement" }
+    }
+  ],
+  "outputs": [
+    { "name": "data_bucket_id",     "description": "The name (ID) of the S3 data bucket.",         "sensitive": false },
+    { "name": "data_bucket_arn",    "description": "The ARN of the S3 data bucket.",               "sensitive": false },
+    { "name": "data_bucket_region", "description": "The AWS region the data bucket was created in.", "sensitive": false },
+    { "name": "log_bucket_id",      "description": "The name (ID) of the access-log bucket.",      "sensitive": false },
+    { "name": "log_bucket_arn",     "description": "The ARN of the access-log bucket.",            "sensitive": false }
+  ]
+}

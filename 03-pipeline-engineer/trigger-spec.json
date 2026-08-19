@@ -1,0 +1,9 @@
+{
+  "trigger": {
+    "type": "github_workflow_dispatch",
+    "repo": "portpoc/iac-s3-bucket",
+    "workflow": "apply.yml",
+    "ref": "main",
+    "inputs_from": "modules/aws-s3-bucket/schema.json"
+  }
+}

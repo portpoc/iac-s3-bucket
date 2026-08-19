@@ -1,0 +1,23 @@
+{
+  "provider": "aws",
+  "topology": "two-bucket pattern: private data bucket + dedicated access-log bucket, same AWS region, same account",
+  "resources": [
+    "aws_s3_bucket (data)",
+    "aws_s3_bucket_public_access_block (data)",
+    "aws_s3_bucket_versioning (data)",
+    "aws_s3_bucket_server_side_encryption_configuration (data)",
+    "aws_s3_bucket_logging (data)",
+    "aws_s3_bucket (log)",
+    "aws_s3_bucket_public_access_block (log)",
+    "aws_s3_bucket_server_side_encryption_configuration (log)",
+    "aws_s3_bucket_ownership_controls (log)",
+    "aws_s3_bucket_policy (log)"
+  ],
+  "decisions": [
+    { "id": "ADR-1", "decision": "Two-bucket pattern (data + log)", "reason": "separates access logs from application data; log bucket never inherits data retention" },
+    { "id": "ADR-2", "decision": "Block all public access unconditionally", "reason": "DSV baseline for internal classification; reduces blast radius of misconfiguration" },
+    { "id": "ADR-3", "decision": "SSE-S3 (AES-256) over SSE-KMS", "reason": "internal classification does not require CMK; SSE-S3 is free and zero-ops" },
+    { "id": "ADR-4", "decision": "Versioning always enabled on data bucket", "reason": "protects against accidental deletion and overwrites; required by requirements" },
+    { "id": "ADR-5", "decision": "Log bucket co-provisioned in same module call", "reason": "guarantees log bucket always exists and matches data bucket configuration" }
+  ]
+}

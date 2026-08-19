@@ -1,0 +1,22 @@
+{
+  "resource": "s3-bucket",
+  "providers": ["aws"],
+  "environments": ["dev", "tst", "qua", "ppr", "prd"],
+  "data_classification": "internal",
+  "parameters": [
+    { "name": "bucket_name", "type": "string", "required": true },
+    { "name": "environment", "type": "string", "enum": ["dev", "tst", "qua", "ppr", "prd"], "required": true },
+    { "name": "owner", "type": "string", "required": true },
+    { "name": "cost_center", "type": "string", "required": true },
+    { "name": "region", "type": "string", "constraint": "DSV-approved region", "default": "eu-west-1", "required": false }
+  ],
+  "constraints": [
+    "private — block all public access",
+    "versioning always enabled",
+    "AES-256 (SSE-S3) encryption at rest",
+    "access logging to dedicated log bucket",
+    "DSV required tags on every resource",
+    "data-classification=internal"
+  ],
+  "open_questions": []
+}

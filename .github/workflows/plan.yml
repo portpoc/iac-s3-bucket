@@ -1,0 +1,102 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/aws-s3-bucket/**'
+      - '.github/workflows/plan.yml'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_CLI_CONFIG_FILE: $HOME/.terraformrc
+  TF_WORKING_DIR: modules/aws-s3-bucket
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Artifactory Terraform registry
+        run: |
+          cat > $HOME/.terraformrc << 'EOF'
+          provider_installation {
+            direct {
+              exclude = ["registry.terraform.io/*/*"]
+            }
+            network_mirror {
+              url = "https://artifactory.dsv.com/artifactory/api/terraform/terraform-providers-remote/providers/"
+            }
+          }
+          EOF
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          role-session-name: terraform-plan-${{ github.run_id }}
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.5"
+
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=aws-s3-bucket/${{ github.event.inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=eu-west-1" \
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform plan \
+            -var="bucket_name=${{ github.event.inputs.bucket_name }}" \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="owner=${{ github.event.inputs.owner }}" \
+            -var="cost_center=${{ github.event.inputs.cost_center }}" \
+            -var="region=${{ github.event.inputs.region }}" \
+            -out=tfplan
+          terraform show -json tfplan > plan.json
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.run_id }}
+          path: |
+            ${{ env.TF_WORKING_DIR }}/tfplan
+            ${{ env.TF_WORKING_DIR }}/plan.json
+          retention-days: 7
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Post Infracost comment
+        run: |
+          infracost diff \
+            --path ${{ env.TF_WORKING_DIR }}/plan.json \
+            --format github-comment \
+            --github-token ${{ secrets.GITHUB_TOKEN }} \
+            --pull-request ${{ github.event.pull_request.number }}

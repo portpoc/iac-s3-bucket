@@ -1,0 +1,16 @@
+flowchart LR
+    operator["Operator / CI Pipeline\n(Runs terraform apply)"]
+
+    subgraph s3Module ["IaC S3 Bucket Module (Terraform)"]
+        dataBucket["Data Bucket\naws_s3_bucket\n- Versioning: always on\n- SSE-S3 AES-256\n- Public access: blocked\n- Server access logging"]
+        logBucket["Access Log Bucket\naws_s3_bucket\n- SSE-S3 AES-256\n- Public access: blocked\n- Ownership: BucketOwnerPreferred"]
+    end
+
+    awsS3["AWS S3 Service\n(Managed Object Storage)"]
+    awsCloudTrail["AWS CloudTrail\n(API Audit Trail)"]
+
+    operator -->|terraform apply| s3Module
+    dataBucket -->|streams access logs to| logBucket
+    dataBucket -->|backed by| awsS3
+    logBucket -->|backed by| awsS3
+    awsCloudTrail -->|audits API events on| dataBucket

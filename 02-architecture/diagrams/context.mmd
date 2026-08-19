@@ -1,0 +1,19 @@
+C4Context
+    title System Context — DSV AWS S3 Bucket Module
+
+    Person(operator, "Operator / CI Pipeline", "Runs terraform apply via GitHub Actions")
+    Person(appDev, "Application Developer", "Reads and writes objects to the bucket")
+
+    System(s3Module, "IaC S3 Bucket Module", "Terraform module that provisions a private S3 data bucket and its dedicated access-log bucket")
+
+    System_Ext(awsS3, "AWS S3", "Managed object storage service")
+    System_Ext(awsIAM, "AWS IAM", "Identity and access management for bucket policies")
+    System_Ext(portIO, "Port.io Catalog", "Records the provisioned bucket as a catalog entity")
+
+    Rel(operator, s3Module, "Triggers module via", "GitHub Actions / terraform apply")
+    Rel(appDev, awsS3, "Reads and writes objects via", "AWS SDK / S3 API")
+    Rel(s3Module, awsS3, "Provisions buckets in", "Terraform AWS Provider")
+    Rel(s3Module, awsIAM, "Attaches bucket policies via", "Terraform AWS Provider")
+    Rel(s3Module, portIO, "Registers run as iac entity in", "Port API")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
